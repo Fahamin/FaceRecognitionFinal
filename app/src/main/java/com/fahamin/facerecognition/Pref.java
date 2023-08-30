@@ -16,25 +16,21 @@ import java.util.Map;
 
 public class Pref {
     Activity activity;
-    SharedPreferences sharedPreferences;
-    SharedPreferences.Editor editor;
+    int OUTPUT_SIZE=192; //Output size of model
+
+
 
     public Pref(Activity activity) {
         this.activity = activity;
-        sharedPreferences = activity.getSharedPreferences("HashMap", MODE_PRIVATE);
-        editor = sharedPreferences.edit();
+
     }
 
-    private void insertToSP(HashMap<String, SimilarityClassifier.Recognition> jsonMap, int mode) {
-        if (mode == 1)  //mode: 0:save all, 1:clear all, 2:update all
-            jsonMap.clear();
-        else if (mode == 0)
-            jsonMap.putAll(readFromSP());
+    void insertToSP(HashMap<String, SimilarityClassifier.Recognition> jsonMap) {
+
+        jsonMap.putAll(readFromSP());
         String jsonString = new Gson().toJson(jsonMap);
-//        for (Map.Entry<String, SimilarityClassifier.Recognition> entry : jsonMap.entrySet())
-//        {
-//            System.out.println("Entry Input "+entry.getKey()+" "+  entry.getValue().getExtra());
-//        }
+        SharedPreferences sharedPreferences = activity.getSharedPreferences("HashMap", MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString("map", jsonString);
         //System.out.println("Input josn"+jsonString.toString());
         editor.apply();
@@ -42,27 +38,31 @@ public class Pref {
     }
 
     //Load Faces from Shared Preferences.Json String to Recognition object
-    private HashMap<String, SimilarityClassifier.Recognition> readFromSP() {
+    HashMap<String, SimilarityClassifier.Recognition> readFromSP(){
+        SharedPreferences sharedPreferences = activity.getSharedPreferences("HashMap", MODE_PRIVATE);
         String defValue = new Gson().toJson(new HashMap<String, SimilarityClassifier.Recognition>());
-        String json = sharedPreferences.getString("map", defValue);
+        String json=sharedPreferences.getString("map",defValue);
         // System.out.println("Output json"+json.toString());
-        TypeToken<HashMap<String, SimilarityClassifier.Recognition>> token = new TypeToken<HashMap<String, SimilarityClassifier.Recognition>>() {
-        };
-        HashMap<String, SimilarityClassifier.Recognition> retrievedMap = new Gson().fromJson(json, token.getType());
+        TypeToken<HashMap<String,SimilarityClassifier.Recognition>> token = new TypeToken<HashMap<String,SimilarityClassifier.Recognition>>() {};
+        HashMap<String,SimilarityClassifier.Recognition> retrievedMap=new Gson().fromJson(json,token.getType());
         // System.out.println("Output map"+retrievedMap.toString());
 
         //During type conversion and save/load procedure,format changes(eg float converted to double).
         //So embeddings need to be extracted from it in required format(eg.double to float).
-        for (Map.Entry<String, SimilarityClassifier.Recognition> entry : retrievedMap.entrySet()) {
-            float[][] output = new float[1][500];
-            ArrayList arrayList = (ArrayList) entry.getValue().getExtra();
+        for (Map.Entry<String, SimilarityClassifier.Recognition> entry : retrievedMap.entrySet())
+        {
+            float[][] output=new float[1][OUTPUT_SIZE];
+            ArrayList arrayList= (ArrayList) entry.getValue().getExtra();
             arrayList = (ArrayList) arrayList.get(0);
             for (int counter = 0; counter < arrayList.size(); counter++) {
-                output[0][counter] = ((Double) arrayList.get(counter)).floatValue();
+                output[0][counter]= ((Double) arrayList.get(counter)).floatValue();
             }
             entry.getValue().setExtra(output);
 
+            //System.out.println("Entry output "+entry.getKey()+" "+entry.getValue().getExtra() );
+
         }
+//        System.out.println("OUTPUT"+ Arrays.deepToString(outut));
         Toast.makeText(activity, "Recognitions Loaded", Toast.LENGTH_SHORT).show();
         return retrievedMap;
     }

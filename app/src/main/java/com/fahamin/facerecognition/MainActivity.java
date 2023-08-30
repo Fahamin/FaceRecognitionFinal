@@ -23,24 +23,36 @@ import android.media.Image;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.ParcelFileDescriptor;
+import android.text.InputType;
+import android.util.Pair;
+import android.util.Size;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
+import androidx.camera.view.PreviewView;
+import androidx.core.content.ContextCompat;
+import androidx.lifecycle.LifecycleOwner;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.common.util.concurrent.ListenableFuture;
-
-
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.mlkit.vision.common.InputImage;
@@ -48,24 +60,6 @@ import com.google.mlkit.vision.face.Face;
 import com.google.mlkit.vision.face.FaceDetection;
 import com.google.mlkit.vision.face.FaceDetector;
 import com.google.mlkit.vision.face.FaceDetectorOptions;
-
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.camera.view.PreviewView;
-import androidx.core.content.ContextCompat;
-import androidx.lifecycle.LifecycleOwner;
-
-import android.os.ParcelFileDescriptor;
-import android.text.InputType;
-import android.util.Pair;
-import android.util.Size;
-import android.view.View;
-
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageButton;
-import android.widget.ImageView;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import org.tensorflow.lite.Interpreter;
 
@@ -94,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
     ImageView face_preview;
     Interpreter tfLite;
     TextView reco_name, preview_info, textAbove_preview;
-    Button recognize, camera_switch, actions;
+    Button recognize, camera_switch, actions, add_face_camera, add_gallary;
     ImageButton add_face;
     CameraSelector cameraSelector;
     boolean developerMode = false;
@@ -119,6 +113,8 @@ public class MainActivity extends AppCompatActivity {
     private HashMap<String, SimilarityClassifier.Recognition> registered = new HashMap<>(); //saved Faces
 
     @RequiresApi(api = Build.VERSION_CODES.M)
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -136,6 +132,8 @@ public class MainActivity extends AppCompatActivity {
 
         face_preview.setVisibility(View.INVISIBLE);
         recognize = findViewById(R.id.button3);
+        add_face_camera = findViewById(R.id.btnCamera);
+        add_gallary = findViewById(R.id.btnGallry);
         camera_switch = findViewById(R.id.button5);
         actions = findViewById(R.id.button2);
         textAbove_preview.setText("Recognized Face:");
@@ -226,29 +224,40 @@ public class MainActivity extends AppCompatActivity {
                 addFace();
             }
         }));
+        add_gallary.setOnClickListener((new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                loadphoto();
+            }
+        }));
+
+
+        add_face_camera.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                textAbove_preview.setText("Face Preview: ");
+                recognize.setText("Recognize");
+                add_face.setVisibility(View.VISIBLE);
+                reco_name.setVisibility(View.INVISIBLE);
+                face_preview.setVisibility(View.VISIBLE);
+                preview_info.setText("1.Bring Face in view of Camera.\n\n2.Your Face preview will appear here.\n\n3.Click Add button to save face.");
+
+            }
+        });
 
 
         recognize.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (recognize.getText().toString().equals("Recognize")) {
-                    start = true;
-                    textAbove_preview.setText("Recognized Face:");
-                    recognize.setText("Add Face");
-                    add_face.setVisibility(View.INVISIBLE);
-                    reco_name.setVisibility(View.VISIBLE);
-                    face_preview.setVisibility(View.INVISIBLE);
-                    preview_info.setText("");
-                    //preview_info.setVisibility(View.INVISIBLE);
-                } else {
-                    textAbove_preview.setText("Face Preview: ");
-                    recognize.setText("Recognize");
-                    add_face.setVisibility(View.VISIBLE);
-                    reco_name.setVisibility(View.INVISIBLE);
-                    face_preview.setVisibility(View.VISIBLE);
-                    preview_info.setText("1.Bring Face in view of Camera.\n\n2.Your Face preview will appear here.\n\n3.Click Add button to save face.");
+                start = true;
+                textAbove_preview.setText("Recognized Face:");
+                add_face.setVisibility(View.INVISIBLE);
+                reco_name.setVisibility(View.VISIBLE);
+                face_preview.setVisibility(View.INVISIBLE);
+                preview_info.setText("");
+                //preview_info.setVisibility(View.INVISIBLE);
 
-                }
 
             }
         });
@@ -265,78 +274,9 @@ public class MainActivity extends AppCompatActivity {
                         .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
                         .build();
         detector = FaceDetection.getClient(highAccuracyOpts);
-        imageAddFromDrable();
+
         cameraBind();
 
-    }
-
-    public void imageAddFromDrable() {
-
-        textAbove_preview.setText("Face Preview: ");
-        recognize.setText("Recognize");
-        add_face.setVisibility(View.VISIBLE);
-        reco_name.setVisibility(View.INVISIBLE);
-        face_preview.setVisibility(View.VISIBLE);
-        preview_info.setText("1.Bring Face in view of Camera.\n\n2.Your Face preview will appear here.\n\n3.Click Add button to save face.");
-
-        InputImage image = null;
-
-        Bitmap avatar = BitmapFactory.decodeResource(getResources(), R.drawable.img);
-        if (avatar != null) {
-            image = InputImage.fromBitmap(avatar, 0);
-
-        }
-
-        assert image != null;
-        Task<List<Face>> result = detector.process(image)
-                .addOnSuccessListener(
-                        faces -> {
-
-                            if (faces.size() != 0) {
-
-                                Face face = faces.get(0); //Get first face from detected faces
-//                                                    System.out.println(face);
-
-                                //mediaImage to Bitmap
-
-                                int rot = 0;
-
-                                //Adjust orientation of Face
-                                Bitmap frame_bmp1 = rotateBitmap(avatar, rot, false, false);
-                                //Get bounding box of face
-                                RectF boundingBox = new RectF(face.getBoundingBox());
-
-                                //Crop out bounding box from whole Bitmap(image)
-                                Bitmap cropped_face = getCropBitmapByCPU(frame_bmp1, boundingBox);
-                                cropped_face = rotateBitmap(cropped_face, 0, flipX, false);
-                                //Scale the acquired Face to 112*112 which is required input for model
-                                Bitmap scaled = getResizedBitmap(cropped_face, 112, 112);
-
-                                recognizeImage(scaled); //Send scaled bitmap to create face embeddings.
-//                                                    System.out.println(boundingBox);
-                            } else {
-                                if (registered.isEmpty())
-                                    reco_name.setText("Add Face");
-                                else
-                                    reco_name.setText("No Face Detected!");
-                            }
-
-                        })
-                .addOnFailureListener(
-                        new OnFailureListener() {
-                            @Override
-                            public void onFailure(@NonNull Exception e) {
-                                // Task failed with an exception
-                                // ...
-                            }
-                        })
-                .addOnCompleteListener(new OnCompleteListener<List<Face>>() {
-                    @Override
-                    public void onComplete(@NonNull Task<List<Face>> task) {
-
-                        //v.important to acquire next frame for analysis
-                    }
-                });
 
     }
 
@@ -388,32 +328,32 @@ public class MainActivity extends AppCompatActivity {
 
     private void addFace() {
         {
-
             start = false;
             AlertDialog.Builder builder = new AlertDialog.Builder(context);
             builder.setTitle("Enter Name");
 
             // Set up the input
             final EditText input = new EditText(context);
+
             input.setInputType(InputType.TYPE_CLASS_TEXT);
             builder.setView(input);
-
 
             // Set up the buttons
             builder.setPositiveButton("ADD", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     //Toast.makeText(context, input.getText().toString(), Toast.LENGTH_SHORT).show();
+
                     //Create and Initialize new object with Face embeddings and Name.
                     SimilarityClassifier.Recognition result = new SimilarityClassifier.Recognition(
                             "0", "", -1f);
                     result.setExtra(embeedings);
+
                     registered.put(input.getText().toString(), result);
                     start = true;
 
                 }
             });
-
             builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
@@ -637,10 +577,8 @@ public class MainActivity extends AppCompatActivity {
                 }
                 InputImage image = null;
 
-
                 @SuppressLint("UnsafeExperimentalUsageError")
                 // Camera Feed-->Analyzer-->ImageProxy-->mediaImage-->InputImage(needed for ML kit face detection)
-
                 Image mediaImage = imageProxy.getImage();
 
                 if (mediaImage != null) {
@@ -670,6 +608,8 @@ public class MainActivity extends AppCompatActivity {
 
                                                     //Adjust orientation of Face
                                                     Bitmap frame_bmp1 = rotateBitmap(frame_bmp, rot, false, false);
+
+
                                                     //Get bounding box of face
                                                     RectF boundingBox = new RectF(face.getBoundingBox());
 
@@ -766,6 +706,7 @@ public class MainActivity extends AppCompatActivity {
 
         tfLite.runForMultipleInputsOutputs(inputArray, outputMap); //Run model
 
+
         float distance_local = Float.MAX_VALUE;
         String id = "0";
         String label = "?";
@@ -794,6 +735,8 @@ public class MainActivity extends AppCompatActivity {
                         reco_name.setText("Unknown");
 //                    System.out.println("nearest: " + name + " - distance: " + distance_local);
                 }
+
+
             }
         }
 
@@ -808,11 +751,7 @@ public class MainActivity extends AppCompatActivity {
 //            recognitions.add( rec );
 
     }
-//    public void register(String name, SimilarityClassifier.Recognition rec) {
-//        registered.put(name, rec);
-//    }
 
-    //Compare Faces by distance between face embeddings
     private List<Pair<String, Float>> findNearest(float[] emb) {
         List<Pair<String, Float>> neighbour_list = new ArrayList<Pair<String, Float>>();
         Pair<String, Float> ret = null; //to get closest match
@@ -999,10 +938,6 @@ public class MainActivity extends AppCompatActivity {
         else if (mode == 0)
             jsonMap.putAll(readFromSP());
         String jsonString = new Gson().toJson(jsonMap);
-//        for (Map.Entry<String, SimilarityClassifier.Recognition> entry : jsonMap.entrySet())
-//        {
-//            System.out.println("Entry Input "+entry.getKey()+" "+  entry.getValue().getExtra());
-//        }
         SharedPreferences sharedPreferences = getSharedPreferences("HashMap", MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString("map", jsonString);
@@ -1033,7 +968,10 @@ public class MainActivity extends AppCompatActivity {
             }
             entry.getValue().setExtra(output);
 
+            //System.out.println("Entry output "+entry.getKey()+" "+entry.getValue().getExtra() );
+
         }
+//        System.out.println("OUTPUT"+ Arrays.deepToString(outut));
         Toast.makeText(context, "Recognitions Loaded", Toast.LENGTH_SHORT).show();
         return retrievedMap;
     }
@@ -1043,7 +981,7 @@ public class MainActivity extends AppCompatActivity {
         start = false;
         Intent intent = new Intent();
         intent.setType("image/*");
-        intent.setAction(Intent.ACTION_GET_CONTENT);
+        intent.setAction(Intent.ACTION_PICK);
         startActivityForResult(Intent.createChooser(intent, "Select Picture"), SELECT_PICTURE);
     }
 
@@ -1051,6 +989,7 @@ public class MainActivity extends AppCompatActivity {
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK) {
+
             if (requestCode == SELECT_PICTURE) {
                 Uri selectedImageUri = data.getData();
                 try {
@@ -1066,6 +1005,11 @@ public class MainActivity extends AppCompatActivity {
                                 face_preview.setVisibility(View.VISIBLE);
                                 preview_info.setText("1.Bring Face in view of Camera.\n\n2.Your Face preview will appear here.\n\n3.Click Add button to save face.");
                                 Face face = faces.get(0);
+//                                System.out.println(face);
+
+                                //write code to recreate bitmap from source
+                                //Write code to show bitmap to canvas
+
                                 Bitmap frame_bmp = null;
                                 try {
                                     frame_bmp = getBitmapFromUri(selectedImageUri);
@@ -1094,6 +1038,7 @@ public class MainActivity extends AppCompatActivity {
                                     e.printStackTrace();
                                 }
                             }
+
                         }
                     }).addOnFailureListener(new OnFailureListener() {
                         @Override
@@ -1109,6 +1054,7 @@ public class MainActivity extends AppCompatActivity {
 
 
             }
+
         }
     }
 
