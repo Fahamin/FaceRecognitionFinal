@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId "com.fahamin.facerecognition"
-        minSdkVersion 21
+        minSdkVersion 24
         targetSdkVersion 34
         versionCode 4
         versionName "1.3"
