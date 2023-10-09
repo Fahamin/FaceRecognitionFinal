@@ -1,6 +1,7 @@
 package com.fahamin.facerecognition;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -13,8 +14,11 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.YuvImage;
 import android.media.Image;
+import android.net.Uri;
+import android.os.ParcelFileDescriptor;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -22,65 +26,23 @@ import java.nio.MappedByteBuffer;
 import java.nio.ReadOnlyBufferException;
 import java.nio.channels.FileChannel;
 
-public class Utilst {
-    public   static String modelFile = "mobile_face_net.tflite"; //model name
+public class Utils {
+    Context context;
 
-    public static Bitmap getResizedBitmap(Bitmap bm, int newWidth, int newHeight) {
-        int width = bm.getWidth();
-        int height = bm.getHeight();
-        float scaleWidth = ((float) newWidth) / width;
-        float scaleHeight = ((float) newHeight) / height;
-        // CREATE A MATRIX FOR THE MANIPULATION
-        Matrix matrix = new Matrix();
-        // RESIZE THE BIT MAP
-        matrix.postScale(scaleWidth, scaleHeight);
-
-        // "RECREATE" THE NEW BITMAP
-        Bitmap resizedBitmap = Bitmap.createBitmap(bm, 0, 0, width, height, matrix, false);
-        bm.recycle();
-        return resizedBitmap;
+    public Utils(Context context) {
+        this.context = context;
     }
 
-    public static Bitmap getCropBitmapByCPU(Bitmap source, RectF cropRectF) {
-        Bitmap resultBitmap = Bitmap.createBitmap((int) cropRectF.width(), (int) cropRectF.height(), Bitmap.Config.ARGB_8888);
-        Canvas cavas = new Canvas(resultBitmap);
-
-        // draw background
-        Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
-        paint.setColor(Color.WHITE);
-        cavas.drawRect(new RectF(0, 0, cropRectF.width(), cropRectF.height()), paint);
-
-        Matrix matrix = new Matrix();
-        matrix.postTranslate(-cropRectF.left, -cropRectF.top);
-
-        cavas.drawBitmap(source, matrix, paint);
-
-        if (source != null && !source.isRecycled()) {
-            source.recycle();
-        }
-
-        return resultBitmap;
+    public MappedByteBuffer loadModelFile(Activity activity, String MODEL_FILE) throws IOException {
+        AssetFileDescriptor fileDescriptor = activity.getAssets().openFd(MODEL_FILE);
+        FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
+        FileChannel fileChannel = inputStream.getChannel();
+        long startOffset = fileDescriptor.getStartOffset();
+        long declaredLength = fileDescriptor.getDeclaredLength();
+        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
     }
 
-    public static Bitmap rotateBitmap(Bitmap bitmap, int rotationDegrees, boolean flipX, boolean flipY) {
-        Matrix matrix = new Matrix();
-
-        // Rotate the image back to straight.
-        matrix.postRotate(rotationDegrees);
-
-        // Mirror the image along the X or Y axis.
-        matrix.postScale(flipX ? -1.0f : 1.0f, flipY ? -1.0f : 1.0f);
-        Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
-
-        // Recycle the old bitmap if it has changed.
-        if (rotatedBitmap != bitmap) {
-            bitmap.recycle();
-        }
-        return rotatedBitmap;
-    }
-
-    //IMPORTANT. If conversion not done ,the toBitmap conversion does not work on some devices.
-    public static byte[] YUV_420_888toNV21(Image image) {
+    private static byte[] YUV_420_888toNV21(Image image) {
 
         int width = image.getWidth();
         int height = image.getHeight();
@@ -152,7 +114,76 @@ public class Utilst {
         return nv21;
     }
 
-    public static Bitmap toBitmap(Image image) {
+    public Bitmap rotateBitmap(
+            Bitmap bitmap, int rotationDegrees, boolean flipX, boolean flipY) {
+        Matrix matrix = new Matrix();
+
+        // Rotate the image back to straight.
+        matrix.postRotate(rotationDegrees);
+
+        // Mirror the image along the X or Y axis.
+        matrix.postScale(flipX ? -1.0f : 1.0f, flipY ? -1.0f : 1.0f);
+        Bitmap rotatedBitmap =
+                Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+
+        // Recycle the old bitmap if it has changed.
+        if (rotatedBitmap != bitmap) {
+            bitmap.recycle();
+        }
+        return rotatedBitmap;
+    }
+
+    public Bitmap getCropBitmapByCPU(Bitmap source, RectF cropRectF) {
+        Bitmap resultBitmap = Bitmap.createBitmap((int) cropRectF.width(),
+                (int) cropRectF.height(), Bitmap.Config.ARGB_8888);
+        Canvas cavas = new Canvas(resultBitmap);
+
+        // draw background
+        Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
+        paint.setColor(Color.WHITE);
+        cavas.drawRect(
+                new RectF(0, 0, cropRectF.width(), cropRectF.height()),
+                paint);
+
+        Matrix matrix = new Matrix();
+        matrix.postTranslate(-cropRectF.left, -cropRectF.top);
+
+        cavas.drawBitmap(source, matrix, paint);
+
+        if (source != null && !source.isRecycled()) {
+            source.recycle();
+        }
+
+        return resultBitmap;
+    }
+
+    public Bitmap getResizedBitmap(Bitmap bm, int newWidth, int newHeight) {
+        int width = bm.getWidth();
+        int height = bm.getHeight();
+        float scaleWidth = ((float) newWidth) / width;
+        float scaleHeight = ((float) newHeight) / height;
+        // CREATE A MATRIX FOR THE MANIPULATION
+        Matrix matrix = new Matrix();
+        // RESIZE THE BIT MAP
+        matrix.postScale(scaleWidth, scaleHeight);
+
+        // "RECREATE" THE NEW BITMAP
+        Bitmap resizedBitmap = Bitmap.createBitmap(
+                bm, 0, 0, width, height, matrix, false);
+        bm.recycle();
+        return resizedBitmap;
+    }
+
+    public Bitmap getBitmapFromUri(Uri uri) throws IOException {
+        ParcelFileDescriptor parcelFileDescriptor =
+                context.getContentResolver().openFileDescriptor(uri, "r");
+        FileDescriptor fileDescriptor = parcelFileDescriptor.getFileDescriptor();
+        Bitmap image = BitmapFactory.decodeFileDescriptor(fileDescriptor);
+        parcelFileDescriptor.close();
+        return image;
+    }
+
+    public Bitmap toBitmap(Image image) {
 
         byte[] nv21 = YUV_420_888toNV21(image);
 
@@ -168,14 +199,6 @@ public class Utilst {
         //System.out.println("FORMAT"+image.getFormat());
 
         return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-    }
-    public static MappedByteBuffer loadModelFile(Activity activity, String MODEL_FILE) throws IOException {
-        AssetFileDescriptor fileDescriptor = activity.getAssets().openFd(MODEL_FILE);
-        FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
-        FileChannel fileChannel = inputStream.getChannel();
-        long startOffset = fileDescriptor.getStartOffset();
-        long declaredLength = fileDescriptor.getDeclaredLength();
-        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
     }
 
 }
