@@ -129,8 +129,7 @@ public class MainActivity extends AppCompatActivity {
         reco_name = findViewById(R.id.textView);
         preview_info = findViewById(R.id.textView2);
 
-        SharedPreferences sharedPref = getSharedPreferences("Distance", Context.MODE_PRIVATE);
-        distance = sharedPref.getFloat("distance", 1.00f);
+        distance = pref.sharedPreferences.getFloat("distance", 1.00f);
 
         face_preview.setVisibility(View.INVISIBLE);
         camera_switch = findViewById(R.id.button5);

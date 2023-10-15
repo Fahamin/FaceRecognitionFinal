@@ -35,6 +35,12 @@ public class Pref {
         Toast.makeText(context, "Recognitions Saved", Toast.LENGTH_SHORT).show();
     }
 
+    public void insetToImage(String key, String value) {
+        editor.putString(key, value);
+        //System.out.println("Input josn"+jsonString.toString());
+        editor.apply();
+    }
+
     public HashMap<String, SimilarityClassifier.Recognition> readFromSP() {
         String defValue = new Gson().toJson(new HashMap<String, SimilarityClassifier.Recognition>());
         String json = sharedPreferences.getString("map", defValue);

@@ -16,6 +16,7 @@ import android.graphics.YuvImage;
 import android.media.Image;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
+import android.util.Base64;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileDescriptor;
@@ -42,6 +43,18 @@ public class Utils {
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
     }
 
+    public String getBase64String(Bitmap bitmap)
+    {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+
+        byte[] imageBytes = baos.toByteArray();
+
+        String base64String = Base64.encodeToString(imageBytes, Base64.NO_WRAP);
+
+        return base64String;
+    }
     private static byte[] YUV_420_888toNV21(Image image) {
 
         int width = image.getWidth();

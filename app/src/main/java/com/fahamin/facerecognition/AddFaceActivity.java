@@ -93,6 +93,7 @@ public class AddFaceActivity extends AppCompatActivity {
 
     Pref pref;
     Utils utils;
+    private String base64value;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -106,8 +107,7 @@ public class AddFaceActivity extends AppCompatActivity {
         face_preview = findViewById(R.id.imageView);
         add_face = findViewById(R.id.imageButton);
 
-        SharedPreferences sharedPref = getSharedPreferences("Distance", Context.MODE_PRIVATE);
-        distance = sharedPref.getFloat("distance", 1.00f);
+        distance = pref.sharedPreferences.getFloat("distance", 1.00f);
 
         recognize = findViewById(R.id.button3);
         camera_switch = findViewById(R.id.button5);
@@ -265,7 +265,7 @@ public class AddFaceActivity extends AppCompatActivity {
 
                     registered.put(input.getText().toString(), result);
                     pref.insertToSP(registered); //mode: 0:save all, 1:clear all, 2:update all
-
+                    pref.insetToImage(input.getText().toString(), base64value);
                 }
             });
 
@@ -406,7 +406,11 @@ public class AddFaceActivity extends AppCompatActivity {
         ByteBuffer imgData = ByteBuffer.allocateDirect(1 * inputSize * inputSize * 3 * 4);
 
         imgData.order(ByteOrder.nativeOrder());
+        try {
+            base64value = utils.getBase64String(bitmap);
+        } catch (Exception e) {
 
+        }
         intValues = new int[inputSize * inputSize];
 
         //get pixel values from Bitmap to normalize
