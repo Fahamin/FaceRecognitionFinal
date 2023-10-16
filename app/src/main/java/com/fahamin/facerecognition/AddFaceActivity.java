@@ -265,7 +265,7 @@ public class AddFaceActivity extends AppCompatActivity {
 
                     registered.put(input.getText().toString(), result);
                     pref.insertToSP(registered); //mode: 0:save all, 1:clear all, 2:update all
-                    pref.insetToImage(input.getText().toString(), base64value);
+                    pref.insetToImage(input.getText().toString().trim(), base64value);
                 }
             });
 

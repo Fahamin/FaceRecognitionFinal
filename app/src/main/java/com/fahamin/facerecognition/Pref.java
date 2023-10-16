@@ -41,6 +41,11 @@ public class Pref {
         editor.apply();
     }
 
+    public String getImage(String key) {
+
+       return sharedPreferences.getString(key,"notFound");
+    }
+
     public HashMap<String, SimilarityClassifier.Recognition> readFromSP() {
         String defValue = new Gson().toJson(new HashMap<String, SimilarityClassifier.Recognition>());
         String json = sharedPreferences.getString("map", defValue);

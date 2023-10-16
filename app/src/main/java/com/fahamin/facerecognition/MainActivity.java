@@ -25,6 +25,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.text.InputType;
+import android.util.Base64;
 import android.util.Pair;
 import android.util.Size;
 import android.view.View;
@@ -319,7 +320,7 @@ public class MainActivity extends AppCompatActivity {
     public void recognizeImage(final Bitmap bitmap) {
 
         // set Face to Preview
-        face_preview.setImageBitmap(bitmap);
+        //  face_preview.setImageBitmap(bitmap);
 
         //Create ByteBuffer to store normalized image
 
@@ -385,9 +386,21 @@ public class MainActivity extends AppCompatActivity {
 
 //                    System.out.println("nearest: " + name + " - distance: " + distance_local);
                 } else {
-                    if (distance_local < distance) //If distance between Closest found face is more than 1.000 ,then output UNKNOWN face.
+                    if (distance_local < distance) {
                         reco_name.setText(name);
-                    else
+
+                        //If distance between Closest found face is more than 1.000 ,then output UNKNOWN face.
+                        try {
+                            byte[] decodedString = Base64.decode(pref.getImage(name), Base64.DEFAULT);
+                            Bitmap bitmap3 = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+                            face_preview.setVisibility(View.VISIBLE);
+                            face_preview.setImageBitmap(bitmap3);
+                            face_preview.invalidate();
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    } else
                         reco_name.setText("Unknown");
 //                    System.out.println("nearest: " + name + " - distance: " + distance_local);
                 }
